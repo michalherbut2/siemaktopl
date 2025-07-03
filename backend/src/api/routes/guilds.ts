@@ -4,6 +4,8 @@ import { authenticateToken } from "../middleware/auth";
 import { DatabaseManager } from "../../db/DatabaseManager";
 import { Guild } from "discord.js";
 import { Server as SocketIOServer } from 'socket.io';
+import { checkGuildPermissions } from "../middleware/checkGuildPermisions";
+
 
 const router = Router();
 
@@ -26,7 +28,7 @@ router.get("/", async (req, res) => {
     // For simplicity, get guilds from bot's cache where user has admin permissions
     const botGuilds = client.guilds.cache
       .filter((guild: Guild) =>
-        guild.members.cache.get(userId)?.permissions.has("Administrator")
+        guild.members.cache.get(userId)?.permissions.has("Administrator") || guild.ownerId === userId
       )
       .map((guild: Guild) => ({
         id: guild.id,
@@ -47,7 +49,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get specific guild settings
-router.get("/:guildId", async (req, res) => {
+router.get("/:guildId", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
     const client = req.app.locals.discordClient;
@@ -88,7 +90,7 @@ router.get("/:guildId", async (req, res) => {
 });
 
 // Update guild settings
-router.put("/:guildId", async (req, res) => {
+router.put("/:guildId", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
     // const { prefix, enabled, timeoutLogChannelId } = req.body;
@@ -109,7 +111,7 @@ router.put("/:guildId", async (req, res) => {
 });
 
 // Get guild channels
-router.get("/:guildId/channels", async (req, res) => {
+router.get("/:guildId/channels", checkGuildPermissions, async (req, res) => {
   try {
     const client = req.app.locals.discordClient;
     const { guildId } = req.params;
@@ -137,7 +139,7 @@ router.get("/:guildId/channels", async (req, res) => {
 });
 
 // Get guild roles
-router.get("/:guildId/roles", async (req, res) => {
+router.get("/:guildId/roles", checkGuildPermissions, async (req, res) => {
   try {
     const client = req.app.locals.discordClient;
     const { guildId } = req.params;
@@ -164,7 +166,7 @@ router.get("/:guildId/roles", async (req, res) => {
 });
 
 // Commands management
-router.get("/:guildId/commands", async (req, res) => {
+router.get("/:guildId/commands", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
     const commands = await DatabaseManager.getGuildCommands(guildId);
@@ -175,7 +177,7 @@ router.get("/:guildId/commands", async (req, res) => {
   }
 });
 
-router.put("/:guildId/commands/:commandId", async (req, res) => {
+router.put("/:guildId/commands/:commandId", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId, commandId } = req.params;
     const updateData = req.body;
@@ -192,7 +194,7 @@ router.put("/:guildId/commands/:commandId", async (req, res) => {
 });
 
 // Custom commands management
-router.get("/:guildId/custom-commands", async (req, res) => {
+router.get("/:guildId/custom-commands", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
     const customCommands = await DatabaseManager.getCustomCommands(guildId);
@@ -203,7 +205,7 @@ router.get("/:guildId/custom-commands", async (req, res) => {
   }
 });
 
-router.post("/:guildId/custom-commands", async (req, res) => {
+router.post("/:guildId/custom-commands", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
     const userId = (req as any).user.userId;
@@ -217,7 +219,7 @@ router.post("/:guildId/custom-commands", async (req, res) => {
   }
 });
 
-router.put("/:guildId/custom-commands/:commandId", async (req, res) => {
+router.put("/:guildId/custom-commands/:commandId", checkGuildPermissions, async (req, res) => {
   try {
     const { commandId } = req.params;
     const updateData = req.body;
@@ -233,7 +235,7 @@ router.put("/:guildId/custom-commands/:commandId", async (req, res) => {
   }
 });
 
-router.delete("/:guildId/custom-commands/:commandId", async (req, res) => {
+router.delete("/:guildId/custom-commands/:commandId", checkGuildPermissions, async (req, res) => {
   try {
     const { commandId } = req.params;
     await DatabaseManager.deleteCustomCommand(commandId);
@@ -245,7 +247,7 @@ router.delete("/:guildId/custom-commands/:commandId", async (req, res) => {
 });
 
 // Analytics
-router.get("/:guildId/analytics", async (req, res) => {
+router.get("/:guildId/analytics", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
     const { days = 30 } = req.query;
