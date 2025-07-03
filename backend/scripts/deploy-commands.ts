@@ -22,7 +22,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN!);
 
 (async () => {
   try {
-    const clientId = process.env.DISCORD_CLIENT_ID!;
+    const clientId = process.env.VITE_DISCORD_CLIENT_ID!;
     const testGuildId = process.env.TEST_GUILD_ID;
     if (testGuildId && process.env.NODE_ENV === "development") {
       console.log("Registering slash commands to test guild...");

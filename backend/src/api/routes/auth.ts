@@ -18,7 +18,7 @@ router.post('/discord', async (req, res) => {
     
     // Exchange code for token
     const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', {
-      client_id: process.env.DISCORD_CLIENT_ID,
+      client_id: process.env.VITE_DISCORD_CLIENT_ID,
       client_secret: process.env.DISCORD_CLIENT_SECRET,
       grant_type: 'authorization_code',
       code: code,

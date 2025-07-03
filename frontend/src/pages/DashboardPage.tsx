@@ -73,7 +73,7 @@ export default function DashboardPage() {
             The bot isn't in any servers where you have admin permissions.
           </p>
           <a
-            href={`https://discord.com/api/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`}
+            href={`https://discord.com/api/oauth2/authorize?client_id=${process.env.VITE_DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-discord-blurple hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
