@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { PermissionsBitField } from "discord.js";
+import { JwtPayload } from 'jsonwebtoken';
 
-export async function checkGuildPermissions(req: Request, res: Response, next: NextFunction) {
+interface AuthenticatedRequest extends Request {
+  user?: JwtPayload | string;
+}
+
+export async function checkGuildPermissions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const { guildId } = req.params;
   const client = req.app.locals.discordClient;
-  const userId = req.user?.id; // zakładam, że masz usera w `req.user` po auth
-
+  const userId = (req as any).user?.userId; // zakładam, że masz usera w `req.user` po auth
+  
   if (!userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
