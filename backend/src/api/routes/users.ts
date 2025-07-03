@@ -2,20 +2,40 @@
 import { Router, Request, Response } from "express";
 import { authenticateToken } from "../middleware/auth";
 import { DatabaseManager } from "../../db/DatabaseManager";
+import axios from "axios";
+// ...existing code...
 
+// Funkcja pobierająca guildy użytkownika z Discord API
+async function fetchUserGuilds(accessToken: string) {
+  const response = await axios.get("https://discord.com/api/v10/users/@me/guilds", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  return response.data;
+}
 const router = Router();
 
 // Apply authentication middleware
 router.use(authenticateToken);
 
-// GET /users/me - Get the authenticated user's info
+// ...existing code...
 router.get("/me", async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId;
     const user = await DatabaseManager.getUser(userId);
-    
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    let guilds: any[] = [];
+    if (user.accessToken) {
+      try {
+        guilds = await fetchUserGuilds(user.accessToken);
+      } catch (err) {
+        console.error("Failed to fetch guilds from Discord API:", err);
+      }
     }
 
     // Return user info without sensitive data
@@ -23,7 +43,7 @@ router.get("/me", async (req: Request, res: Response) => {
       id: user.id,
       username: user.username,
       avatar: user.avatar,
-      guilds: user.guilds || [],
+      guilds, // <-- pobrane z Discord API
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
@@ -34,6 +54,7 @@ router.get("/me", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch user info" });
   }
 });
+// ...existing code...
 
 // GET /users/me/websocket-token - Get WebSocket connection token
 router.get("/me/websocket-token", async (req: Request, res: Response) => {

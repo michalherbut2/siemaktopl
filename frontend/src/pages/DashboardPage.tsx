@@ -172,13 +172,13 @@ export default function DashboardPage() {
           <p className="text-gray-500 mb-6">
             The bot isn't in any servers where you have admin permissions.
           </p>
-          
+          <a
             href={`https://discord.com/api/oauth2/authorize?client_id=${import.meta.env.VITE_DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-discord-blurple hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
           >
-            Invite Bot to Server  
+            Invite Bot to Server
           </a>
         </div>
       ) : (

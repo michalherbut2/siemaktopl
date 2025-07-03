@@ -3,7 +3,18 @@ import { Server as SocketIOServer } from 'socket.io';
 import { Client } from 'discord.js';
 import jwt from 'jsonwebtoken';
 import { DatabaseManager } from '../../db/DatabaseManager';
+import axios from "axios";
+// ...existing code...
 
+// Funkcja pobierająca guildy użytkownika z Discord API
+async function fetchUserGuilds(accessToken: string) {
+  const response = await axios.get("https://discord.com/api/v10/users/@me/guilds", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  return response.data;
+}
 interface AuthenticatedSocket {
   userId?: string;
   username?: string;
@@ -12,29 +23,37 @@ interface AuthenticatedSocket {
 
 export function setupWebSocket(io: SocketIOServer, client: Client) {
   // WebSocket authentication middleware
-  io.use(async (socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      
-      if (!token) {
-        return next(new Error('Authentication error'));
-      }
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      (socket as any).userId = decoded.userId;
-      (socket as any).username = decoded.username;
-      
-      // Get user's guilds for authorization
-      const user = await DatabaseManager.getUser(decoded.userId);
-      if (user) {
-        (socket as any).guilds = user.guilds || [];
-      }
-      
-      next();
-    } catch (err) {
-      next(new Error('Authentication error'));
+    if (!token) {
+      return next(new Error('Authentication error'));
     }
-  });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    (socket as any).userId = decoded.userId;
+    (socket as any).username = decoded.username;
+
+    // Pobierz użytkownika z bazy
+    const user = await DatabaseManager.getUser(decoded.userId);
+
+    // Pobierz guildy z Discord API
+    let guilds: any[] = [];
+    if (user?.accessToken) {
+      try {
+        guilds = await fetchUserGuilds(user.accessToken);
+      } catch (err) {
+        console.error("Failed to fetch guilds from Discord API:", err);
+      }
+    }
+    (socket as any).guilds = guilds.map((g: any) => g.id); // tylko ID guildów
+
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
+});
 
   io.on('connection', (socket) => {
     const authenticatedSocket = socket as any;
@@ -113,8 +132,8 @@ export function setupWebSocket(io: SocketIOServer, client: Client) {
         },
         channel: {
           id: message.channel.id,
-          name: message.channel.name
-        },
+            name: (message.channel as any).name || null
+       },
         guild: {
           id: message.guild.id,
           name: message.guild.name
