@@ -1,6 +1,4 @@
 // Entry point for Discord bot and API
-
-console.log("Backend starting...");
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 
@@ -13,6 +11,8 @@ import rateLimit from 'express-rate-limit';
 import { BotManager } from './bot/BotManager';
 import { DatabaseManager } from './db/DatabaseManager';
 import { setupRoutes } from './api/routes';
+
+console.log("Backend starting...");
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
