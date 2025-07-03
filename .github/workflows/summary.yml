@@ -56,6 +56,5 @@ EOF
 ${{ steps.inference.outputs.response }}
 EOF
 )"
-          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
