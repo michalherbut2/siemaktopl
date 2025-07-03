@@ -1,4 +1,3 @@
-// frontend/src/pages/HomePage.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -6,11 +5,14 @@ import {
   CommandLineIcon, 
   CogIcon, 
   ShieldCheckIcon,
-  ChatBubbleLeftRightIcon 
+  ChatBubbleLeftRightIcon,
+  WifiIcon // Dodajemy ikonkę statusu
 } from '@heroicons/react/24/outline';
+import { useWebSocket } from '../hooks/useWebSocket'; // 1. Import hooka
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { connected } = useWebSocket(); // 2. Używamy WebSocket hooka
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -23,6 +25,14 @@ export default function HomePage() {
           Manage your Discord bot with ease. Configure settings, monitor usage, 
           and control your bot across all your servers from one centralized dashboard.
         </p>
+        
+        {/* Status WebSocketa */}
+        <div className="flex justify-center items-center mb-8 space-x-2">
+          <WifiIcon className={`h-6 w-6 ${connected ? "text-green-400" : "text-red-400"}`} />
+          <span className={`text-sm font-semibold ${connected ? "text-green-400" : "text-red-400"}`}>
+            {connected ? "Live" : "Offline"}
+          </span>
+        </div>
         
         {user ? (
           <Link
@@ -48,19 +58,16 @@ export default function HomePage() {
           <h3 className="text-xl font-semibold text-white mb-2">Slash Commands</h3>
           <p className="text-gray-400">Modern Discord slash commands with full TypeScript support.</p>
         </div>
-
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <CogIcon className="h-12 w-12 text-green-400 mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Easy Configuration</h3>
           <p className="text-gray-400">Configure your bot settings per server with a user-friendly interface.</p>
         </div>
-
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <ShieldCheckIcon className="h-12 w-12 text-yellow-400 mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Secure & Reliable</h3>
           <p className="text-gray-400">Built with security best practices and reliable infrastructure.</p>
         </div>
-
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <ChatBubbleLeftRightIcon className="h-12 w-12 text-purple-400 mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">Interactive Components</h3>
