@@ -61,11 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (code: string) => {
     try {
-      console.log(code);
-
       const response = await axios.post("/auth/discord", { code });
       const { token: newToken, user: newUser } = response.data;
-      console.log(response);
+      // console.log("response", response);
 
       setToken(newToken);
       setUser(newUser);
@@ -74,7 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("discord_user", JSON.stringify(newUser));
       axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
     } catch (error) {
-      console.error("Login failed:", error);
+      // console.error("Login failed:", error);
+      // console.log("Login failed");
       throw error;
     }
   };

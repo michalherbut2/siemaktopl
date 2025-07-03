@@ -11,11 +11,9 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      console.log(searchParams);
       
       const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
-      console.log(code, errorParam);
       
       if (errorParam) {
         setError('Authentication was cancelled or failed.');
@@ -31,7 +29,8 @@ export default function AuthCallback() {
         await login(code);
         navigate('/dashboard');
       } catch (err) {
-        console.error('Login error:', err);
+        // console.error('Login error:', err);
+        console.log('Login error');
         setError('Failed to authenticate with Discord.');
       }
     };

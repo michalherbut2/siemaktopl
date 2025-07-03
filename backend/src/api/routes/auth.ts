@@ -27,7 +27,7 @@ router.post('/discord', async (req, res) => {
     }, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
-    console.log("token", tokenResponse.data);
+    // console.log("token", tokenResponse.data);
     
     const { access_token, refresh_token } = tokenResponse.data;
 

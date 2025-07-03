@@ -15,7 +15,7 @@ const event: BotEvent = {
       guildSettings = await DatabaseManager.getGuild(message.guildId);
     }
 
-    const prefix = guildSettings?.prefix || process.env.PREFIX || '!';
+    const prefix = guildSettings?.prefix || '!';
     
     if (!message.content.startsWith(prefix)) return;
 

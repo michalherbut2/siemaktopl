@@ -14,8 +14,6 @@ export default function LoginPage() {
     const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
     const redirectUri = encodeURIComponent(import.meta.env.VITE_DISCORD_REDIRECT_URI || '');
 
-    // const clientId = process.env.REACT_APP_DISCORD_CLIENT_ID;
-    // const redirectUri = encodeURIComponent(process.env.REACT_APP_DISCORD_REDIRECT_URI || '');
     const scope = encodeURIComponent('identify guilds');
 
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;

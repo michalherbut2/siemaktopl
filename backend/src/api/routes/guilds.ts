@@ -53,7 +53,7 @@ router.get("/:guildId", async (req, res) => {
     }
 
     let guildSettings = await DatabaseManager.getGuild(guildId);
-    console.log("guildSettings", guildSettings);
+    // console.log("guildSettings", guildSettings);
 
     if (!guildSettings) {
       guildSettings = await DatabaseManager.createDefaultGuild({
