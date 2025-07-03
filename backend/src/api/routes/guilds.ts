@@ -23,16 +23,20 @@ router.get("/", async (req, res) => {
     }
 
     // For simplicity, get guilds from bot's cache where user has admin permissions
-    const botGuilds = client.guilds.cache.map((guild: Guild) => ({
-      id: guild.id,
-      name: guild.name,
-      icon: guild.icon,
-      memberCount: guild.memberCount,
-      owner: guild.ownerId === userId,
-      permissions:
-        guild.members.cache.get(userId)?.permissions.has("Administrator") ||
-        false,
-    }));
+    const botGuilds = client.guilds.cache
+      .filter((guild: Guild) =>
+        guild.members.cache.get(userId)?.permissions.has("Administrator")
+      )
+      .map((guild: Guild) => ({
+        id: guild.id,
+        name: guild.name,
+        icon: guild.icon,
+        memberCount: guild.memberCount,
+        owner: guild.ownerId === userId,
+        permissions:
+          guild.members.cache.get(userId)?.permissions.has("Administrator") ||
+          false,
+      }));
 
     res.json(botGuilds);
   } catch (error) {
@@ -123,7 +127,7 @@ router.get("/:guildId/channels", async (req, res) => {
         position: c.position,
       }))
       .sort((a: any, b: any) => a.position - b.position);
-    
+
     res.json(channels);
   } catch (error) {
     console.error("Error fetching channels:", error);
@@ -137,9 +141,9 @@ router.get("/:guildId/roles", async (req, res) => {
     const client = req.app.locals.discordClient;
     const { guildId } = req.params;
     const guild = client.guilds.cache.get(guildId);
-    
+
     if (!guild) return res.status(404).json({ error: "Guild not found" });
-    
+
     const roles = guild.roles.cache
       .filter((r: any) => r.name !== "@everyone")
       .map((r: any) => ({
@@ -149,8 +153,8 @@ router.get("/:guildId/roles", async (req, res) => {
         position: r.position,
         permissions: r.permissions.toArray(),
       }))
-      .sort((a:any, b:any) => b.position - a.position);
-    
+      .sort((a: any, b: any) => b.position - a.position);
+
     res.json(roles);
   } catch (error) {
     console.error("Error fetching roles:", error);
@@ -174,8 +178,11 @@ router.put("/:guildId/commands/:commandId", async (req, res) => {
   try {
     const { guildId, commandId } = req.params;
     const updateData = req.body;
-    
-    const updatedCommand = await DatabaseManager.updateCommand(parseInt(commandId), updateData);
+
+    const updatedCommand = await DatabaseManager.updateCommand(
+      parseInt(commandId),
+      updateData
+    );
     res.json(updatedCommand);
   } catch (error) {
     console.error("Error updating command:", error);
@@ -200,7 +207,7 @@ router.post("/:guildId/custom-commands", async (req, res) => {
     const { guildId } = req.params;
     const userId = (req as any).user.userId;
     const commandData = { ...req.body, guildId, createdBy: userId };
-    
+
     const newCommand = await DatabaseManager.createCustomCommand(commandData);
     res.json(newCommand);
   } catch (error) {
@@ -213,8 +220,11 @@ router.put("/:guildId/custom-commands/:commandId", async (req, res) => {
   try {
     const { commandId } = req.params;
     const updateData = req.body;
-    
-    const updatedCommand = await DatabaseManager.updateCustomCommand(commandId, updateData);
+
+    const updatedCommand = await DatabaseManager.updateCustomCommand(
+      commandId,
+      updateData
+    );
     res.json(updatedCommand);
   } catch (error) {
     console.error("Error updating custom command:", error);
@@ -238,8 +248,11 @@ router.get("/:guildId/analytics", async (req, res) => {
   try {
     const { guildId } = req.params;
     const { days = 30 } = req.query;
-    
-    const analytics = await DatabaseManager.getGuildAnalytics(guildId, Number(days));
+
+    const analytics = await DatabaseManager.getGuildAnalytics(
+      guildId,
+      Number(days)
+    );
     res.json(analytics);
   } catch (error) {
     console.error("Error fetching analytics:", error);
