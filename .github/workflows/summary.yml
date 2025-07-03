@@ -46,15 +46,12 @@ jobs:
 
       - name: Comment with AI summary
         run: |
+          COMMENT="${{ steps.inference.outputs.response }}"
+
           if [ "${{ steps.context.outputs.TYPE }}" = "issue" ]; then
-            gh issue comment ${{ steps.context.outputs.NUMBER }} --body "$(cat <<EOF
-${{ steps.inference.outputs.response }}
-EOF
-)"
+            gh issue comment ${{ steps.context.outputs.NUMBER }} --body "$COMMENT"
           else
-            gh pr comment ${{ steps.context.outputs.NUMBER }} --body "$(cat <<EOF
-${{ steps.inference.outputs.response }}
-EOF
-)"
+            gh pr comment ${{ steps.context.outputs.NUMBER }} --body "$COMMENT"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
