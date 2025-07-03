@@ -46,7 +46,10 @@ jobs:
 
       - name: Comment with AI summary
         run: |
-          COMMENT="${{ steps.inference.outputs.response }}"
+          # Zapisujemy odpowiedź AI (ze wszystkimi cudzysłowami) do zmiennej COMMENT:
+          read -r -d '' COMMENT << 'EOF'
+${{ steps.inference.outputs.response }}
+EOF
 
           if [ "${{ steps.context.outputs.TYPE }}" = "issue" ]; then
             gh issue comment ${{ steps.context.outputs.NUMBER }} --body "$COMMENT"
