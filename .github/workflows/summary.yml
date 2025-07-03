@@ -1,34 +1,55 @@
-name: Summarize new issues
+name: Summarize new issues or PRs
 
 on:
   issues:
     types: [opened]
+  pull_request:
+    types: [opened, edited]
 
 jobs:
   summary:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      models: read
+      pull-requests: write
       contents: read
+      actions: read
+      models: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Define context variables
+        id: context
+        run: |
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            echo "TYPE=issue" >> $GITHUB_OUTPUT
+            echo "TITLE=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            echo "BODY=${{ github.event.issue.body }}" >> $GITHUB_OUTPUT
+            echo "NUMBER=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "TYPE=pull_request" >> $GITHUB_OUTPUT
+            echo "TITLE=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+            echo "BODY=${{ github.event.pull_request.body }}" >> $GITHUB_OUTPUT
+            echo "NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Run AI inference
         id: inference
         uses: actions/ai-inference@v1
         with:
           prompt: |
-            Summarize the following GitHub issue in one paragraph:
-            Title: ${{ github.event.issue.title }}
-            Body: ${{ github.event.issue.body }}
+            Summarize the following GitHub ${{ steps.context.outputs.TYPE }} in one paragraph:
+            Title: ${{ steps.context.outputs.TITLE }}
+            Body: ${{ steps.context.outputs.BODY }}
 
       - name: Comment with AI summary
         run: |
-          gh issue comment $ISSUE_NUMBER --body '${{ steps.inference.outputs.response }}'
+          if [ "${{ steps.context.outputs.TYPE }}" = "issue" ]; then
+            gh issue comment ${{ steps.context.outputs.NUMBER }} --body "${{ steps.inference.outputs.response }}"
+          else
+            gh pr comment ${{ steps.context.outputs.NUMBER }} --body "${{ steps.inference.outputs.response }}"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          RESPONSE: ${{ steps.inference.outputs.response }}
