@@ -1,20 +1,29 @@
 // Entry point for Discord bot and API
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
-
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import { BotManager } from './bot/BotManager';
 import { DatabaseManager } from './db/DatabaseManager';
 import { setupRoutes } from './api/routes';
+import { setupWebSocket } from './api/websocket';
 
 console.log("Backend starting...");
 
 const app = express();
+const server = createServer(app);
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+  }
+});
+
 const PORT = process.env.API_PORT || 3001;
 
 // Middleware
@@ -50,7 +59,6 @@ async function startApplication() {
 
     // Initialize Bot
     const botManager = new BotManager(client);
-
     await botManager.initialize();
     console.log('✅ Bot initialized');
 
@@ -61,11 +69,13 @@ async function startApplication() {
     // Setup API Routes
     setupRoutes(app, client);
 
-    // Start API Server
-    app.listen(PORT, () => {
-      console.log(`✅ API Server running on port ${PORT}`);
-    });
+    // Setup WebSocket
+    setupWebSocket(io, client);
 
+    // Start API Server with WebSocket support
+    server.listen(PORT, () => {
+      console.log(`✅ API Server with WebSocket running on port ${PORT}`);
+    });
   } catch (error) {
     console.error('❌ Failed to start application:', error);
     process.exit(1);
@@ -77,6 +87,7 @@ startApplication();
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('🔄 Shutting down gracefully...');
+  io.close();
   client.destroy();
   await DatabaseManager.disconnect();
   process.exit(0);

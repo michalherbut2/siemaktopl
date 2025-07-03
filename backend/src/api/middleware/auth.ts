@@ -22,3 +22,16 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     next();
   });
 }
+
+// New function for WebSocket token validation
+export function validateWebSocketToken(token: string): Promise<JwtPayload | null> {
+  return new Promise((resolve) => {
+    jwt.verify(token, process.env.JWT_SECRET!, (err, user) => {
+      if (err) {
+        resolve(null);
+      } else {
+        resolve(user as JwtPayload);
+      }
+    });
+  });
+}

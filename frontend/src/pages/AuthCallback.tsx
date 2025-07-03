@@ -2,16 +2,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { connected } = useWebSocket();
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>('Authenticating with Discord...');
 
   useEffect(() => {
     const handleCallback = async () => {
-      
       const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
       
@@ -19,17 +21,23 @@ export default function AuthCallback() {
         setError('Authentication was cancelled or failed.');
         return;
       }
-
+      
       if (!code) {
         setError('No authorization code received.');
         return;
       }
 
       try {
+        setStatus('Logging in...');
         await login(code);
-        navigate('/dashboard');
+        
+        setStatus('Establishing real-time connection...');
+        
+        // Wait a bit for WebSocket connection
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       } catch (err) {
-        // console.error('Login error:', err);
         console.log('Login error');
         setError('Failed to authenticate with Discord.');
       }
@@ -37,6 +45,13 @@ export default function AuthCallback() {
 
     handleCallback();
   }, [searchParams, login, navigate]);
+
+  // Update status based on WebSocket connection
+  useEffect(() => {
+    if (connected) {
+      setStatus('Connected! Redirecting to dashboard...');
+    }
+  }, [connected]);
 
   if (error) {
     return (
@@ -59,7 +74,13 @@ export default function AuthCallback() {
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-discord-blurple mx-auto mb-4"></div>
-        <p className="text-gray-300">Authenticating with Discord...</p>
+        <p className="text-gray-300 mb-2">{status}</p>
+        {connected && (
+          <div className="flex items-center justify-center space-x-2 text-green-400">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm">Real-time connection established</span>
+          </div>
+        )}
       </div>
     </div>
   );

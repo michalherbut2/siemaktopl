@@ -3,7 +3,9 @@ import { Router } from "express";
 import { authenticateToken } from "../middleware/auth";
 import { DatabaseManager } from "../../db/DatabaseManager";
 import { Guild } from "discord.js";
+import { Server as SocketIOServer } from 'socket.io';
 import { checkGuildPermissions } from "../middleware/checkGuildPermisions";
+
 
 const router = Router();
 
@@ -278,5 +280,55 @@ router.get("/bot/status", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch bot status" });
   }
 });
+// Add WebSocket broadcasting to guild update endpoint
+router.put("/:guildId", async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const updateData = req.body;
+    const userId = (req as any).user.userId;
 
+    const updatedGuild = await DatabaseManager.updateGuild(guildId, updateData);
+
+    // Broadcast update to WebSocket clients
+    const io: SocketIOServer = req.app.locals.socketIO;
+    if (io) {
+      io.to(`guild:${guildId}`).emit('guild:settings:updated', {
+        guildId,
+        settings: updatedGuild,
+        updatedBy: userId
+      });
+    }
+
+    res.json(updatedGuild);
+  } catch (error) {
+    console.error("Error updating guild:", error);
+    res.status(500).json({ error: "Failed to update guild settings" });
+  }
+});
+
+// Add WebSocket broadcasting to custom command operations
+router.post("/:guildId/custom-commands", async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const userId = (req as any).user.userId;
+    const commandData = { ...req.body, guildId, createdBy: userId };
+    
+    const newCommand = await DatabaseManager.createCustomCommand(commandData);
+
+    // Broadcast to WebSocket clients
+    const io: SocketIOServer = req.app.locals.socketIO;
+    if (io) {
+      io.to(`guild:${guildId}`).emit('guild:command:created', {
+        guildId,
+        command: newCommand,
+        createdBy: userId
+      });
+    }
+
+    res.json(newCommand);
+  } catch (error) {
+    console.error("Error creating custom command:", error);
+    res.status(500).json({ error: "Failed to create custom command" });
+  }
+});
 export default router;

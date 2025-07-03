@@ -45,111 +45,111 @@ model Guild {
 }
 
 model User {
-  id          String   @id
-  username    String
-  avatar      String?
-  accessToken String?
+  id           String   @id
+  username     String
+  avatar       String?
+  accessToken  String?
   refreshToken String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("users")
 }
 
 model Command {
-  id        Int      @id @default(autoincrement())
-  name      String
-  enabled   Boolean  @default(true)
-  guildId   String
-  category  String?
-  cooldown  Int?     @default(0) // in seconds
-  permissions String? @default("[]") // JSON array of required permissions
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  enabled     Boolean  @default(true)
+  guildId     String
+  category    String?
+  cooldown    Int?     @default(0) // in seconds
+  permissions String?  @default("[]") // JSON array of required permissions
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
   @@unique([name, guildId])
   @@map("commands")
 }
 
 model CustomCommand {
-  id          String   @id @default(cuid())
-  name        String
-  trigger     String   // What triggers the command
-  response    String   // The response text
-  enabled     Boolean  @default(true)
-  guildId     String
-  createdBy   String?  // User ID who created it
-  embedEnabled Boolean @default(false)
-  embedColor  String?  @default("#0099ff")
-  embedTitle  String?
+  id             String   @id @default(cuid())
+  name           String
+  trigger        String   // What triggers the command
+  response       String   // The response text
+  enabled        Boolean  @default(true)
+  guildId        String
+  createdBy      String?  // User ID who created it
+  embedEnabled   Boolean  @default(false)
+  embedColor     String?  @default("#0099ff")
+  embedTitle     String?
   embedDescription String?
-  embedFooter String?
+  embedFooter    String?
   embedThumbnail String?
-  embedImage  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  embedImage     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guild          Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
   @@unique([trigger, guildId])
   @@map("custom_commands")
 }
 
 model ChannelConfig {
-  id        String   @id @default(cuid())
-  channelId String
-  guildId   String
-  type      String   // 'welcome', 'log', 'timeout', 'announcement', etc.
-  enabled   Boolean  @default(true)
-  settings  String?  @default("{}") // JSON object for channel-specific settings
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  channelId  String
+  guildId    String
+  type       String   // 'welcome', 'log', 'timeout', 'announcement', etc.
+  enabled    Boolean  @default(true)
+  settings   String?  @default("{}") // JSON object for channel-specific settings
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guild      Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
   @@unique([channelId, guildId, type])
   @@map("channel_configs")
 }
 
 model GuildAnalytics {
-  id          String   @id @default(cuid())
-  guildId     String
-  date        DateTime @default(now())
-  commandsUsed Int     @default(0)
-  messagesProcessed Int @default(0)
-  activeUsers Int     @default(0)
-  newMembers  Int     @default(0)
-  leftMembers Int     @default(0)
-  voiceMinutes Int    @default(0)
-  data        String? @default("{}") // JSON object for additional metrics
+  id               String   @id @default(cuid())
+  guildId          String
+  date             DateTime @default(now())
+  commandsUsed     Int      @default(0)
+  messagesProcessed Int     @default(0)
+  activeUsers      Int      @default(0)
+  newMembers       Int      @default(0)
+  leftMembers      Int      @default(0)
+  voiceMinutes     Int      @default(0)
+  data             String?  @default("{}") // JSON object for additional metrics
 
-  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guild            Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
   @@unique([guildId, date])
   @@map("guild_analytics")
 }
 
 model CommandUsage {
-  id        String   @id @default(cuid())
+  id          String   @id @default(cuid())
   commandName String
-  guildId   String
-  userId    String
-  timestamp DateTime @default(now())
-  success   Boolean  @default(true)
-  error     String?
+  guildId     String
+  userId      String
+  timestamp   DateTime @default(now())
+  success     Boolean  @default(true)
+  error       String?
 
   @@map("command_usage")
 }
 
 model BotStatus {
-  id         String   @id @default(cuid())
-  status     String   // 'online', 'offline', 'idle', 'dnd'
-  activity   String?  // Activity text
-  activityType String? // 'playing', 'streaming', 'listening', 'watching'
-  timestamp  DateTime @default(now())
+  id           String   @id @default(cuid())
+  status       String   // 'online', 'offline', 'idle', 'dnd'
+  activity     String?  // Activity text
+  activityType String?  // 'playing', 'streaming', 'listening', 'watching'
+  timestamp    DateTime @default(now())
 
   @@map("bot_status")
 }

@@ -1,10 +1,12 @@
-// frontend/src/pages/LoginPage.tsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { WifiIcon } from '@heroicons/react/24/outline';
 
 export default function LoginPage() {
   const { user } = useAuth();
+  const { connected } = useWebSocket(); // Dodaj to!
 
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -13,11 +15,8 @@ export default function LoginPage() {
   const handleDiscordLogin = () => {
     const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
     const redirectUri = encodeURIComponent(import.meta.env.VITE_DISCORD_REDIRECT_URI || '');
-
     const scope = encodeURIComponent('identify guilds');
-
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-    
     window.location.href = discordAuthUrl;
   };
 
@@ -25,6 +24,13 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto mt-20">
       <div className="bg-gray-800 p-8 rounded-lg border border-gray-700">
         <div className="text-center">
+          {/* Status WebSocket */}
+          <div className="flex justify-center items-center mb-4 space-x-2">
+            <WifiIcon className={`h-5 w-5 ${connected ? "text-green-400" : "text-red-400"}`} />
+            <span className={`text-sm font-semibold ${connected ? "text-green-400" : "text-red-400"}`}>
+              {connected ? "Live" : "Offline"}
+            </span>
+          </div>
           <h2 className="text-3xl font-bold text-white mb-6">Login to Dashboard</h2>
           <p className="text-gray-400 mb-8">
             Connect with Discord to manage your bot settings and server configurations.
