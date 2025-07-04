@@ -1,5 +1,10 @@
 // backend/src/db/DatabaseManager.ts
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, PunishmentType, Guild, GuildConfig, PunishmentLog, User } from "@prisma/client";
+// import { PrismaClient, PunishmentType, Guild, PunishmentLog, User } from "@prisma/client";
+import { GuildConfig as GC } from "../types";
+import { Guild as GuildDC } from "discord.js";
+type GuildConfigInput = Partial<Omit<GuildConfig, 'id' | 'guildId' | 'createdAt' | 'updatedAt'>>;
+type UserData = Partial<Omit<User, 'createdAt' | 'updatedAt'>> & { id: string };
 
 export class DatabaseManager {
   private static instance: PrismaClient;
@@ -25,65 +30,217 @@ export class DatabaseManager {
     }
   }
 
-  // Guild methods
-  static async getGuild(guildId: string) {
-    return await this.db.guild.findUnique({
-      where: { id: guildId },
-      include: {
-        commands: true,
-        customCommands: true,
-        channelConfigs: true,
+  /**
+   * Ensure a guild exists in the database
+   */
+  static async ensureGuild(guild: GuildDC): Promise<Guild> {
+    return await this.db.guild.upsert({
+      where: { id: guild.id },
+      update: {
+        name: guild.name,
+        icon: guild.icon,
       },
-    });
-  }
-
-  static async createGuild(guild: {
-    id: string;
-    name: string;
-    prefix?: string;
-    enabled?: boolean;
-    timeoutLogChannelId?: string | null;
-  }) {
-    // return await this.db.guild.create({
-    await this.db.guild.create({
-      data: {
+      create: {
         id: guild.id,
         name: guild.name,
-        prefix: guild.prefix ?? "!",
-        enabled: guild.enabled ?? true,
-        timeoutLogChannelId: guild.timeoutLogChannelId ?? "bans",
+        icon: guild.icon,
       },
     });
-    return this.getGuild(guild.id);
   }
 
-  static async createDefaultGuild(guild: {
-    id: string;
-    name: string;
-    icon?: string;
-  }) {
-    // return await this.db.guild.create({
-    await this.db.guild.create({
+  /**
+   * Get guild configuration with defaults
+   */
+  static async getGuildConfig(guild: GuildDC): Promise<GuildConfig | null> {
+    await this.ensureGuild(guild);
+    
+    let config = await this.db.guildConfig.findUnique({
+      where: { guildId: guild.id },
+      include: { guild: true },
+    });
+  
+    if (!config) {
+      config = await this.db.guildConfig.create({
+        data: {
+          guildId: guild.id,
+          // Optionally: override any default values here
+        },
+        include: { guild: true },
+      });
+    }
+  
+    return config;
+  }
+
+  /**
+   * Create or update guild configuration
+   */
+  static async upsertGuildConfig(guildDC: GuildDC, config: GC): Promise<GuildConfig> {
+    await this.ensureGuild(guildDC);
+    const guildId = guildDC.id;
+    console.log("config",config);
+
+    // Usuń pola, których Prisma nie przyjmuje w update/create
+  const {
+    id,
+    createdAt,
+    updatedAt,
+    guild,
+    guildId: _ignoredGuildId,
+    ...sanitizedConfig
+  } = config;
+
+    return await this.db.guildConfig.upsert({
+      where: { guildId },
+      update: sanitizedConfig,
+      create: {
+        guildId,
+        ...sanitizedConfig,
+      },
+      include: { guild: true },
+    });
+  }
+
+  /**
+   * Log a punishment action
+   */
+  // static async logPunishment(data: {
+  //   guildId: string;
+  //   type: PunishmentType;
+  //   targetUserId: string;
+  //   moderatorUserId: string;
+  //   reason?: string;
+  //   durationSeconds?: number;
+  //   expiresAt?: Date;
+  //   metadata?: any;
+  // }): Promise<PunishmentLog> {
+  //   await this.ensureGuild(data.guildId, { name: 'Unknown Guild' });
+  //   return this.db.punishmentLog.create({ data });
+
+  //   // return await this.db.punishmentLog.create({
+  //   //   data: {
+  //   //     guildId: data.guildId,
+  //   //     type: data.type,
+  //   //     targetUserId: data.targetUserId,
+  //   //     moderatorUserId: data.moderatorUserId,
+  //   //     reason: data.reason,
+  //   //     durationSeconds: data.durationSeconds,
+  //   //     expiresAt: data.expiresAt,
+  //   //     metadata: data.metadata,
+  //   //   },
+  //   // });
+  // }
+
+  /**
+   * Remove/revoke a punishment
+   */
+  static async removePunishment(punishmentId: string, removedByUserId: string, removalReason?: string): Promise<PunishmentLog> {
+    return await this.db.punishmentLog.update({
+      where: { id: punishmentId },
       data: {
-        id: guild.id,
-        name: guild.name,
-        icon: guild.icon ?? "!",
+        removedAt: new Date(),
+        removedByUserId,
+        removalReason,
       },
     });
-    return this.getGuild(guild.id);
   }
 
-  static async updateGuild(guildId: string, data: any) {
-    return await this.db.guild.update({
-      where: { id: guildId },
-      data,
+  /**
+   * Get active punishments for a guild
+   */
+  static async getActivePunishments(guildId: string, type?: PunishmentType): Promise<PunishmentLog[]> {
+    return await this.db.punishmentLog.findMany({
+      where: {
+        guildId,
+        ...(type && { type }),
+        removedAt: null,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  static async getTimeoutLogChannelId(guildId: string): Promise<string | null> {
-    const guild = await this.db.guild.findUnique({ where: { id: guildId } });
-    return guild?.timeoutLogChannelId || null;
+  /**
+   * Get punishment history for a user
+   */
+  static async getUserPunishments(guildId: string, userId: string, options: {
+    limit?: number;
+    offset?: number;
+    type?: PunishmentType;
+    includeRemoved?: boolean;
+  } = {}): Promise<PunishmentLog[]> {
+    const { limit = 50, offset = 0, type, includeRemoved = true } = options;
+
+    return await this.db.punishmentLog.findMany({
+      where: {
+        guildId,
+        targetUserId: userId,
+        ...(type && { type }),
+        ...(!includeRemoved && { removedAt: null }),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
   }
+
+  // // Guild methods
+  // static async getGuild(guildId: string) {
+  //   return await this.db.guild.findUnique({
+  //     where: { id: guildId },
+  //     include: {
+  //       commands: true,
+  //       customCommands: true,
+  //       channelConfigs: true,
+  //     },
+  //   });
+  // }
+
+  // static async createGuild(guild: {
+  //   id: string;
+  //   name: string;
+  //   prefix?: string;
+  //   enabled?: boolean;
+  //   timeoutLogChannelId?: string | null;
+  // }) {
+  //   // return await this.db.guild.create({
+  //   await this.db.guild.create({
+  //     data: {
+  //       id: guild.id,
+  //       name: guild.name,
+  //       prefix: guild.prefix ?? "!",
+  //       enabled: guild.enabled ?? true,
+  //       timeoutLogChannelId: guild.timeoutLogChannelId ?? "bans",
+  //     },
+  //   });
+  //   return this.getGuild(guild.id);
+  // }
+
+  // static async createDefaultGuild(guild: {
+  //   id: string;
+  //   name: string;
+  //   icon?: string;
+  // }) {
+  //   // return await this.db.guild.create({
+  //   await this.db.guild.create({
+  //     data: {
+  //       id: guild.id,
+  //       name: guild.name,
+  //       icon: guild.icon ?? "!",
+  //     },
+  //   });
+  //   return this.getGuild(guild.id);
+  // }
+
+  // static async updateGuild(guildId: string, data: any) {
+  //   return await this.db.guild.update({
+  //     where: { id: guildId },
+  //     data,
+  //   });
+  // }
 
   // User methods
   static async getUser(userId: string) {
@@ -113,204 +270,4 @@ export class DatabaseManager {
     });
   }
 
-  // Command logging
-  static async logCommand(name: string, guildId: string, userId: string) {
-    return await this.db.command.create({
-      data: { name, guildId, userId },
-    });
-  }
-
-  // Command methods
-  static async getGuildCommands(guildId: string) {
-    return await this.db.command.findMany({
-      where: { guildId },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  static async createCommand(commandData: any) {
-    return await this.db.command.create({
-      data: commandData,
-    });
-  }
-
-  static async updateCommand(id: number, commandData: any) {
-    return await this.db.command.update({
-      where: { id },
-      data: commandData,
-    });
-  }
-
-  static async deleteCommand(id: number) {
-    return await this.db.command.delete({
-      where: { id },
-    });
-  }
-
-  // Custom command methods
-  static async getCustomCommands(guildId: string) {
-    return await this.db.customCommand.findMany({
-      where: { guildId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  static async createCustomCommand(commandData: any) {
-    return await this.db.customCommand.create({
-      data: commandData,
-    });
-  }
-
-  static async updateCustomCommand(id: string, commandData: any) {
-    return await this.db.customCommand.update({
-      where: { id },
-      data: commandData,
-    });
-  }
-
-  static async deleteCustomCommand(id: string) {
-    return await this.db.customCommand.delete({
-      where: { id },
-    });
-  }
-
-  // Channel config methods
-  static async getChannelConfigs(guildId: string) {
-    return await this.db.channelConfig.findMany({
-      where: { guildId },
-    });
-  }
-
-  static async createChannelConfig(configData: any) {
-    return await this.db.channelConfig.create({
-      data: configData,
-    });
-  }
-
-  static async updateChannelConfig(id: string, configData: any) {
-    return await this.db.channelConfig.update({
-      where: { id },
-      data: configData,
-    });
-  }
-
-  static async deleteChannelConfig(id: string) {
-    return await this.db.channelConfig.delete({
-      where: { id },
-    });
-  }
-
-  // Analytics methods
-  static async getGuildAnalytics(guildId: string, days: number = 30) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    return await this.db.guildAnalytics.findMany({
-      where: {
-        guildId,
-        date: { gte: startDate },
-      },
-      orderBy: { date: 'desc' },
-    });
-  }
-
-  static async createAnalyticsEntry(analyticsData: any) {
-    return await this.db.guildAnalytics.create({
-      data: analyticsData,
-    });
-  }
-
-  static async updateAnalyticsEntry(guildId: string, date: Date, data: any) {
-    return await this.db.guildAnalytics.upsert({
-      where: {
-        guildId_date: {
-          guildId,
-          date,
-        },
-      },
-      update: data,
-      create: {
-        guildId,
-        date,
-        ...data,
-      },
-    });
-  }
-
-  // Command usage tracking
-  static async logCommandUsage(commandName: string, guildId: string, userId: string, success: boolean = true, error?: string) {
-    return await this.db.commandUsage.create({
-      data: {
-        commandName,
-        guildId,
-        userId,
-        success,
-        error,
-      },
-    });
-  }
-
-  static async getCommandUsageStats(guildId: string, days: number = 30) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    return await this.db.commandUsage.groupBy({
-      by: ['commandName'],
-      where: {
-        guildId,
-        timestamp: { gte: startDate },
-      },
-      _count: {
-        commandName: true,
-      },
-      orderBy: {
-        _count: {
-          commandName: 'desc',
-        },
-      },
-    });
-  }
-
-  // Bot status methods
-  static async updateBotStatus(status: string, activity?: string, activityType?: string) {
-    return await this.db.botStatus.create({
-      data: {
-        status,
-        activity,
-        activityType,
-      },
-    });
-  }
-
-  static async getLatestBotStatus() {
-    return await this.db.botStatus.findFirst({
-      orderBy: { timestamp: 'desc' },
-    });
-  }
-
-  // Utility methods
-  static async getAllGuilds() {
-    return await this.db.guild.findMany({
-      include: {
-        _count: {
-          select: {
-            commands: true,
-            customCommands: true,
-          },
-        },
-      },
-    });
-  }
-
-  static async getGuildCount() {
-    return await this.db.guild.count();
-  }
-
-  static async getUserCount() {
-    return await this.db.user.count();
-  }
-
-  static async cleanup() {
-    await this.db.$disconnect();
-  }
 }

@@ -4,6 +4,7 @@ import { authenticateToken } from "../middleware/auth";
 import { DatabaseManager } from "../../db/DatabaseManager";
 import { Guild } from "discord.js";
 import { checkGuildPermissions } from "../middleware/checkGuildPermisions";
+import { ConfigManager } from "../../bot/utils/ConfigManager";
 
 const router = Router();
 
@@ -57,30 +58,23 @@ router.get("/:guildId", checkGuildPermissions, async (req, res) => {
       return res.status(404).json({ error: "Guild not found" });
     }
 
-    let guildSettings = await DatabaseManager.getGuild(guildId);
+    let guildSettings = await DatabaseManager.getGuildConfig(guild);
     // console.log("guildSettings", guildSettings);
+    
+    // let guildSettings = await DatabaseManager.getGuild(guildId);
+    // // console.log("guildSettings", guildSettings);
 
-    if (!guildSettings) {
-      guildSettings = await DatabaseManager.createDefaultGuild({
-        id: guildId,
-        name: guild.name,
-        icon: guild.icon,
-      });
-      console.log("Created default guildSettings", guildSettings);
-    }
-
-    // Include related data
-    const commands = await DatabaseManager.getGuildCommands(guildId);
-    const customCommands = await DatabaseManager.getCustomCommands(guildId);
-    const channelConfigs = await DatabaseManager.getChannelConfigs(guildId);
+    // if (!guildSettings) {
+    //   guildSettings = await DatabaseManager.createDefaultGuild({
+    //     id: guildId,
+    //     name: guild.name,
+    //     icon: guild.icon,
+    //   });
+    //   console.log("Created default guildSettings", guildSettings);
+    // }
 
     // res.json(guildSettings);
-    res.json({
-      ...guildSettings,
-      commands,
-      customCommands,
-      channelConfigs,
-    });
+    res.json(guildSettings);
   } catch (error) {
     console.error("Error fetching guild:", error);
     res.status(500).json({ error: "Failed to fetch guild settings" });
@@ -91,6 +85,11 @@ router.get("/:guildId", checkGuildPermissions, async (req, res) => {
 router.put("/:guildId", checkGuildPermissions, async (req, res) => {
   try {
     const { guildId } = req.params;
+    console.log(req.params);
+    
+    const client = req.app.locals.discordClient;
+    const guild = client.guilds.cache.get(guildId);
+
     // const { prefix, enabled, timeoutLogChannelId } = req.body;
     const updateData = req.body;
 
@@ -99,7 +98,12 @@ router.put("/:guildId", checkGuildPermissions, async (req, res) => {
     //   enabled,
     //   timeoutLogChannelId,
     // });
-    const updatedGuild = await DatabaseManager.updateGuild(guildId, updateData);
+    // const updatedGuild = await DatabaseManager.updateGuild(guildId, updateData);
+    const updatedGuild = await DatabaseManager.upsertGuildConfig(guild, updateData);
+
+    // 🔄 Update bot's config cache
+    const configManager = ConfigManager.getInstance();
+    configManager.set(guildId, updatedGuild); // or updateCache(updatedConfig)
 
     res.json(updatedGuild);
   } catch (error) {
@@ -163,120 +167,33 @@ router.get("/:guildId/roles", checkGuildPermissions, async (req, res) => {
   }
 });
 
-// Commands management
-router.get("/:guildId/commands", checkGuildPermissions, async (req, res) => {
-  try {
-    const { guildId } = req.params;
-    const commands = await DatabaseManager.getGuildCommands(guildId);
-    res.json(commands);
-  } catch (error) {
-    console.error("Error fetching commands:", error);
-    res.status(500).json({ error: "Failed to fetch commands" });
-  }
-});
+// // Commands management
+// router.get("/:guildId/commands", checkGuildPermissions, async (req, res) => {
+//   try {
+//     const { guildId } = req.params;
+//     // const commands = await DatabaseManager.getGuildCommands(guildId);
+//     const commands = await DatabaseManager.getGuildCommands(guildId);
+//     res.json(commands);
+//   } catch (error) {
+//     console.error("Error fetching commands:", error);
+//     res.status(500).json({ error: "Failed to fetch commands" });
+//   }
+// });
 
-router.put("/:guildId/commands/:commandId", checkGuildPermissions, async (req, res) => {
-  try {
-    const { guildId, commandId } = req.params;
-    const updateData = req.body;
+// router.put("/:guildId/commands/:commandId", checkGuildPermissions, async (req, res) => {
+//   try {
+//     const { guildId, commandId } = req.params;
+//     const updateData = req.body;
 
-    const updatedCommand = await DatabaseManager.updateCommand(
-      parseInt(commandId),
-      updateData
-    );
-    res.json(updatedCommand);
-  } catch (error) {
-    console.error("Error updating command:", error);
-    res.status(500).json({ error: "Failed to update command" });
-  }
-});
-
-// Custom commands management
-router.get("/:guildId/custom-commands", checkGuildPermissions, async (req, res) => {
-  try {
-    const { guildId } = req.params;
-    const customCommands = await DatabaseManager.getCustomCommands(guildId);
-    res.json(customCommands);
-  } catch (error) {
-    console.error("Error fetching custom commands:", error);
-    res.status(500).json({ error: "Failed to fetch custom commands" });
-  }
-});
-
-router.post("/:guildId/custom-commands", checkGuildPermissions, async (req, res) => {
-  try {
-    const { guildId } = req.params;
-    const userId = (req as any).user.userId;
-    const commandData = { ...req.body, guildId, createdBy: userId };
-
-    const newCommand = await DatabaseManager.createCustomCommand(commandData);
-    res.json(newCommand);
-  } catch (error) {
-    console.error("Error creating custom command:", error);
-    res.status(500).json({ error: "Failed to create custom command" });
-  }
-});
-
-router.put("/:guildId/custom-commands/:commandId", checkGuildPermissions, async (req, res) => {
-  try {
-    const { commandId } = req.params;
-    const updateData = req.body;
-
-    const updatedCommand = await DatabaseManager.updateCustomCommand(
-      commandId,
-      updateData
-    );
-    res.json(updatedCommand);
-  } catch (error) {
-    console.error("Error updating custom command:", error);
-    res.status(500).json({ error: "Failed to update custom command" });
-  }
-});
-
-router.delete("/:guildId/custom-commands/:commandId", checkGuildPermissions, async (req, res) => {
-  try {
-    const { commandId } = req.params;
-    await DatabaseManager.deleteCustomCommand(commandId);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting custom command:", error);
-    res.status(500).json({ error: "Failed to delete custom command" });
-  }
-});
-
-// Analytics
-router.get("/:guildId/analytics", checkGuildPermissions, async (req, res) => {
-  try {
-    const { guildId } = req.params;
-    const { days = 30 } = req.query;
-
-    const analytics = await DatabaseManager.getGuildAnalytics(
-      guildId,
-      Number(days)
-    );
-    res.json(analytics);
-  } catch (error) {
-    console.error("Error fetching analytics:", error);
-    res.status(500).json({ error: "Failed to fetch analytics" });
-  }
-});
-
-// Bot status
-router.get("/bot/status", async (req, res) => {
-  try {
-    const client = req.app.locals.discordClient;
-    const status = {
-      online: client.isReady(),
-      guilds: client.guilds.cache.size,
-      users: client.users.cache.size,
-      uptime: client.uptime,
-      ping: client.ws.ping,
-    };
-    res.json(status);
-  } catch (error) {
-    console.error("Error fetching bot status:", error);
-    res.status(500).json({ error: "Failed to fetch bot status" });
-  }
-});
+//     const updatedCommand = await DatabaseManager.updateCommand(
+//       parseInt(commandId),
+//       updateData
+//     );
+//     res.json(updatedCommand);
+//   } catch (error) {
+//     console.error("Error updating command:", error);
+//     res.status(500).json({ error: "Failed to update command" });
+//   }
+// });
 
 export default router;

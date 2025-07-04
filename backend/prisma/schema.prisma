@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,43 +8,6 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-model Guild {
-  id        String   @id
-  name      String
-  icon      String?
-  prefix    String   @default("!")
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Welcome System
-  welcomeEnabled     Boolean @default(false)
-  welcomeChannelId   String?
-  welcomeMessage     String? @default("Welcome {user} to {guild}!")
-  welcomeEmbedColor  String? @default("#00ff00")
-
-  // Logging System
-  loggingEnabled     Boolean @default(false)
-  logChannelId       String?
-  logEvents          String? @default("[]") // JSON array of event types
-
-  // Moderation
-  timeoutLogChannelId String?
-  autoModEnabled      Boolean @default(false)
-  autoModSettings     String? @default("{}") // JSON object for auto-mod rules
-  
-  // Analytics
-  analyticsEnabled    Boolean @default(true)
-
-  // Relations
-  commands            Command[]
-  customCommands      CustomCommand[]
-  analytics           GuildAnalytics[]
-  channelConfigs      ChannelConfig[]
-
-  @@map("guilds")
 }
 
 model User {
@@ -56,100 +22,100 @@ model User {
   @@map("users")
 }
 
-model Command {
-  id        Int      @id @default(autoincrement())
+model Guild {
+  id        String   @id
   name      String
-  enabled   Boolean  @default(true)
-  guildId   String
-  category  String?
-  cooldown  Int?     @default(0) // in seconds
-  permissions String? @default("[]") // JSON array of required permissions
-  userId    String
+  icon      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  // Configuration
+  config GuildConfig?
+  
+  // Logs
+  punishmentLogs PunishmentLog[]
 
-  @@unique([name, guildId])
-  @@map("commands")
+  @@map("guilds")
 }
 
-model CustomCommand {
-  id          String   @id @default(cuid())
-  name        String
-  trigger     String   // What triggers the command
-  response    String   // The response text
-  enabled     Boolean  @default(true)
-  guildId     String
-  createdBy   String?  // User ID who created it
-  embedEnabled Boolean @default(false)
-  embedColor  String?  @default("#0099ff")
-  embedTitle  String?
-  embedDescription String?
-  embedFooter String?
-  embedThumbnail String?
-  embedImage  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model GuildConfig {
+  id      String @id @default(cuid())
+  guildId String @unique
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
-  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  // Timeout logging
+  timeoutLogEnabled        Boolean @default(false)
+  timeoutLogChannelId      String?
+  timeoutLogMessageTemplate String? @default("**{moderator}** timed out **{target}** for **{duration}**\n**Reason:** {reason}")
 
-  @@unique([trigger, guildId])
-  @@map("custom_commands")
-}
+  // Ban logging
+  banLogEnabled            Boolean @default(false)
+  banLogChannelId          String?
+  banLogMessageTemplate    String? @default("**{moderator}** banned **{target}**\n**Reason:** {reason}")
 
-model ChannelConfig {
-  id        String   @id @default(cuid())
-  channelId String
-  guildId   String
-  type      String   // 'welcome', 'log', 'timeout', 'announcement', etc.
-  enabled   Boolean  @default(true)
-  settings  String?  @default("{}") // JSON object for channel-specific settings
+  // Warn logging
+  warnLogEnabled           Boolean @default(false)
+  warnLogChannelId         String?
+  warnLogMessageTemplate   String? @default("**{moderator}** warned **{target}**\n**Reason:** {reason}")
+
+  // Welcome messages
+  welcomeEnabled           Boolean @default(false)
+  welcomeChannelId         String?
+  welcomeMessageTemplate   String? @default("Welcome to the server, **{user}**!")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
-
-  @@unique([channelId, guildId, type])
-  @@map("channel_configs")
+  @@map("guild_configs")
 }
 
-model GuildAnalytics {
-  id          String   @id @default(cuid())
-  guildId     String
-  date        DateTime @default(now())
-  commandsUsed Int     @default(0)
-  messagesProcessed Int @default(0)
-  activeUsers Int     @default(0)
-  newMembers  Int     @default(0)
-  leftMembers Int     @default(0)
-  voiceMinutes Int    @default(0)
-  data        String? @default("{}") // JSON object for additional metrics
+model PunishmentLog {
+  id       String          @id @default(cuid())
+  guildId  String
+  guild    Guild           @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  
+  // Core punishment data
+  type            PunishmentType
+  targetUserId    String
+  moderatorUserId String
+  reason          String?
+  
+  // Duration in seconds (null for permanent bans, warnings, etc.)
+  durationSeconds Int?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  expiresAt DateTime? // When the punishment expires (for timeouts)
+  
+  // Removal tracking
+  removedAt       DateTime?
+  removedByUserId String?
+  removalReason   String?
+  
+  // Additional metadata
+  metadata Json? // For extensibility (e.g., warning levels, custom fields)
 
-  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
-
-  @@unique([guildId, date])
-  @@map("guild_analytics")
+  @@map("punishment_logs")
+  
+  // Indexes for performance
+  @@index([guildId, type])
+  @@index([guildId, targetUserId])
+  @@index([guildId, moderatorUserId])
+  @@index([guildId, createdAt])
+  @@index([guildId, type, createdAt])
+  @@index([targetUserId, type])
+  @@index([moderatorUserId, type])
+  @@index([expiresAt])
+  @@index([removedAt])
+  @@index([durationSeconds])
 }
 
-model CommandUsage {
-  id        String   @id @default(cuid())
-  commandName String
-  guildId   String
-  userId    String
-  timestamp DateTime @default(now())
-  success   Boolean  @default(true)
-  error     String?
-
-  @@map("command_usage")
-}
-
-model BotStatus {
-  id         String   @id @default(cuid())
-  status     String   // 'online', 'offline', 'idle', 'dnd'
-  activity   String?  // Activity text
-  activityType String? // 'playing', 'streaming', 'listening', 'watching'
-  timestamp  DateTime @default(now())
-
-  @@map("bot_status")
+enum PunishmentType {
+  TIMEOUT
+  BAN
+  WARN
+  KICK
+  MUTE
+  
+  @@map("punishment_type")
 }
