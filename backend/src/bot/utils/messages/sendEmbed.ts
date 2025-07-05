@@ -17,6 +17,7 @@ import {
   StringSelectMenuInteraction,
   ActionRowBuilder,
   AnyComponentBuilder,
+  MessageFlags,
 } from "discord.js";
 
 // Define supported color names
@@ -131,7 +132,7 @@ const sendEmbed = async (
   if (footerText) embed.setFooter({ text: footerText });
 
   // create a message
-  const message: MessageCreateOptions & InteractionReplyOptions = { embeds: [embed], ephemeral };
+  const message: MessageCreateOptions & InteractionReplyOptions = { embeds: [embed] };
 
   if (row) message.components = [row.toJSON()];
   if (content) message.content = content;
@@ -169,6 +170,9 @@ const sendEmbed = async (
         throw new Error("Target does not have a send method");
       }
     } else if (isInteraction(target)) {
+      if (ephemeral) {
+        (message as InteractionReplyOptions).flags = MessageFlags.Ephemeral;
+      }
       // follow up
       if (followUp || target.replied || target.deferred)
         return await target.followUp(message);

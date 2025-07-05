@@ -5,7 +5,8 @@ import {
   GuildMember,
   TextChannel,
   EmbedBuilder,
-  Colors
+  Colors,
+  MessageFlags
 } from 'discord.js';
 import { PrismaClient, PunishmentType } from '@prisma/client';
 import { ConfigManager } from '../../utils/ConfigManager';
@@ -34,7 +35,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild || !interaction.member) {
     return await interaction.reply({ 
       content: 'This command can only be used in servers.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -48,7 +49,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (!targetMember) {
     return await interaction.reply({ 
       content: 'User not found in this server.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -58,7 +59,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (!moderatorMember.permissions.has(PermissionFlagsBits.ModerateMembers)) {
     return await interaction.reply({ 
       content: 'You do not have permission to timeout members.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -66,7 +67,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (!targetMember.moderatable) {
     return await interaction.reply({ 
       content: 'I cannot timeout this user. They may have higher permissions or be the server owner.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -75,7 +76,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       interaction.guild.ownerId !== moderator.id) {
     return await interaction.reply({ 
       content: 'You cannot timeout someone with equal or higher role permissions.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -83,7 +84,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (targetUser.id === moderator.id) {
     return await interaction.reply({ 
       content: 'You cannot timeout yourself.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -91,7 +92,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (targetUser.id === interaction.client.user.id) {
     return await interaction.reply({ 
       content: 'I cannot timeout myself.', 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 
@@ -152,7 +153,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     
     await interaction.reply({ 
       content: `Failed to timeout user: ${errorMessage}`, 
-      ephemeral: true 
+      flags: MessageFlags.Ephemeral 
     });
   }
 }

@@ -1,5 +1,5 @@
 // backend/src/bot/components/exampleButton.ts
-import { ButtonInteraction } from 'discord.js';
+import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { ComponentHandler } from '../../types/bot';
 
 const component: ComponentHandler = {
@@ -7,7 +7,7 @@ const component: ComponentHandler = {
   async execute(interaction: ButtonInteraction) {
     await interaction.reply({
       content: '✅ Button clicked!',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };
