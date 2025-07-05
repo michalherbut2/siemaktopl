@@ -46,7 +46,8 @@ model GuildConfig {
   // Timeout logging
   timeoutLogEnabled        Boolean @default(false)
   timeoutLogChannelId      String?
-  timeoutLogMessageTemplate String? @default("**{moderator}** timed out **{target}** for **{duration}**\n**Reason:** {reason}")
+  timeoutLogAddTemplate       String? @default("{target} w końcu **dostał przerwę** od {executor} na {timestamp} za **{reason}**.")
+  timeoutLogRemoveTemplate    String? @default("niestety {executorId}, jak zbój, zasłużonej **pozbawił przerwy** Czcigodnego {targetId}.")
 
   // Ban logging
   banLogEnabled            Boolean @default(false)

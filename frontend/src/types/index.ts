@@ -11,7 +11,8 @@ export interface GuildConfig {
   guildId: string;
   timeoutLogEnabled: boolean;
   timeoutLogChannelId: string | null;
-  timeoutLogMessageTemplate: string;
+  timeoutLogAddTemplate: string;
+  timeoutLogRemoveTemplate: string;
   banLogEnabled: boolean;
   banLogChannelId: string | null;
   banLogMessageTemplate: string;

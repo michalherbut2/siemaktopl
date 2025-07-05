@@ -1,9 +1,11 @@
 import { Events, Interaction } from "discord.js";
 import { BotEvent } from "../../types/bot";
+import { BotManager } from "../BotManager"; // <--- ADD THIS IMPORT
 
 const event: BotEvent = {
   name: Events.InteractionCreate,
-  async execute(interaction: Interaction, botManager: any) {
+  async execute(interaction: Interaction, botManager: BotManager): Promise<void> {
+    // console.log("bot Manager\n", botManager);
     
     try {
       // Handle slash commands

@@ -8,6 +8,7 @@ import {
   Colors
 } from 'discord.js';
 import { PrismaClient, PunishmentType } from '@prisma/client';
+import { ConfigManager } from '../../utils/ConfigManager';
 
 const prisma = new PrismaClient();
 
@@ -168,11 +169,16 @@ async function sendLogMessage(interaction: ChatInputCommandInteraction, logData:
   timestamp: Date;
 }) {
   try {
-    const guildConfig = {timeoutLogEnabled:1,timeoutLogChannelId:"2",timeoutLogMessageTemplate:"3"}
+    // const guildConfig = {timeoutLogEnabled:1,timeoutLogChannelId:"2",timeoutLogMessageTemplate:"3"}
     // const guildConfig = await prisma.guildConfig.findUnique({
     //   where: { interaction.guild.id },
     //   include: { guild: true }
     // });
+    const configManager = ConfigManager.getInstance();
+    
+    if (!interaction.guild) return 
+
+    const guildConfig = await configManager.get(interaction.guild)
 
     if (!guildConfig?.timeoutLogEnabled || !guildConfig.timeoutLogChannelId) {
       return;
@@ -182,7 +188,7 @@ async function sendLogMessage(interaction: ChatInputCommandInteraction, logData:
     if (!channel) return;
 
     // Template replacement
-    const template = guildConfig.timeoutLogMessageTemplate || 
+    const template = guildConfig.timeoutLogAddTemplate || 
       "**{moderator}** timed out **{target}** for **{duration}**\n**Reason:** {reason}";
 
     const message = template

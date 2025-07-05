@@ -40,4 +40,10 @@ export class ConfigManager {
       this.cache.clear();
     }
   }
+
+  async getTimeoutTemplate(guild: Guild, action: "add" | "remove"): Promise<string> {
+    const config = await this.get(guild); // or however you store it
+    // return config?.timeoutTemplates?.[action] || ""; // fallback to empty or default template
+    return config?.timeoutLogAddTemplate || ""; // fallback to empty or default template
+  }
 }

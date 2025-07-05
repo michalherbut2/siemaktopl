@@ -5,7 +5,9 @@ import { ConfigManager } from "../utils/ConfigManager";
 
 const event: BotEvent = {
   name: Events.GuildMemberUpdate,
-  async execute(oldMember: GuildMember, newMember: GuildMember, client: any) {
+  async execute(oldMember: GuildMember, newMember: GuildMember) {
+    console.log("syf");
+    
     // Check if the member was just timed out
     const oldTimeout = oldMember.communicationDisabledUntil;
     const newTimeout = newMember.communicationDisabledUntil;
@@ -30,7 +32,7 @@ const event: BotEvent = {
         const channel = newMember.guild.channels.cache.get(
           logChannelId
         ) as TextChannel;
-        console.log("channel", channel);
+        // console.log("channel", channel);
         
         if (channel && channel.isTextBased()) {
 
@@ -38,7 +40,7 @@ const event: BotEvent = {
             return template.replace(/{(\w+)}/g, (_, key) => vars[key] ?? `{${key}}`);
           }
           // const template = "**{moderator}** timed out **{target}** for **{duration}**";
-          const template = config?.timeoutLogMessageTemplate || ""
+          const template = config?.timeoutLogAddTemplate || ""
           
           const result = fillTemplate(template, {
             moderator: "admin",

@@ -12,7 +12,8 @@
     "db:setup": "npm run db:generate && npm run db:push"
   },
   "dependencies": {
-    "@prisma/client": "^6.11.0",
+    "@napi-rs/canvas": "^0.1.73",
+    "@prisma/client": "^6.11.1",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "discord.js": "^14.14.1",
@@ -29,7 +30,7 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.4",
     "concurrently": "^8.2.2",
-    "prisma": "^6.11.0",
+    "prisma": "^6.11.1",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.0.0"

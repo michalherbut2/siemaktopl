@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import { GuildConfig } from "../types";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { SingleTemplateSection } from "../components/SingleTemplateSection";
+import { DualTemplateSection } from "../components/DualTemplateSection";
 
 interface Channel {
   id: string;
   name: string;
   type: number;
-  parentId: string,
-  position: string,
+  parentId: string;
+  position: string;
 }
 
 export default function GuildPage() {
@@ -29,31 +31,44 @@ export default function GuildPage() {
   }, [guildId]);
 
   useEffect(() => {
-    axios.get(`/api/guilds/${guildId}`)
-      .then((res) => {
+    axios
+      .get(`/api/guilds/${guildId}`)
+      .then(res => {
         setConfig(res.data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(err => {
         console.error("Error loading guild config:", err);
         setLoading(false);
       });
   }, [guildId]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     if (!config) return;
-    const { name, type, value, checked } = e.target;
-    setConfig({
-      ...config,
-      [name]: type === "checkbox" ? checked : value,
-    });
+    // const { name, type, value, checked } = e.target;
+    const { name, type, value } = e.target;
+    const checked =
+      e.target instanceof HTMLInputElement ? e.target.checked : false;
+    const newValue = type === "checkbox" ? checked : value;
+
+    // setConfig({
+    //   ...config,
+    //   [name]: newValue,
+    // });
+
+    setConfig(prev => ({
+      ...prev!,
+      [name]: newValue,
+    }));
   };
 
   const handleSave = async () => {
     setSaving(true);
-    
+
     try {
       await axios.put(`/api/guilds/${guildId}`, config);
       alert("✅ Configuration saved!");
@@ -64,7 +79,6 @@ export default function GuildPage() {
       alert("❌ Failed to save configuration.");
     } finally {
       setSaving(false);
-
     }
   };
 
@@ -72,35 +86,52 @@ export default function GuildPage() {
   if (!config) return <div className="p-6 text-red-400">Config not found.</div>;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto text-white">
+    <div className="p-6 max-w-5xl mx-auto text-white">
       <Link
-          to="/dashboard"
-          className="inline-flex items-center space-x-2 text-discord-blurple hover:text-blue-400 transition-colors mb-4"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          <span>Back to Dashboard</span>
-        </Link>
+        to="/dashboard"
+        className="inline-flex items-center space-x-2 text-discord-blurple hover:text-blue-400 transition-colors mb-4"
+      >
+        <ArrowLeftIcon className="h-4 w-4" />
+        <span>Back to Dashboard</span>
+      </Link>
       <h2 className="text-3xl font-bold mb-6 text-white">
-        Settings for <span className="text-indigo-400">{config.guild.name}</span>
+        Settings for{" "}
+        <span className="text-indigo-400">{config.guild.name}</span>
       </h2>
 
       <div className="space-y-10 bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-700">
         {/** Timeout Logging */}
-        <Section
+        <DualTemplateSection
           title="Timeout Logging"
           enabled={config.timeoutLogEnabled}
-          onToggle={(e) => handleChange(e)}
+          // enabled={config.banLogEnabled}
+          onToggle={handleChange}
           namePrefix="timeoutLog"
           values={{
             channelId: config.timeoutLogChannelId || "",
-            messageTemplate: config.timeoutLogMessageTemplate,
+            addTemplate: config.timeoutLogAddTemplate,
+            removeTemplate: config.timeoutLogRemoveTemplate,
           }}
           onChange={handleChange}
           channels={channels}
         />
-
+      {/* </div>
+      <div className="space-y-10 bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-700"> */}
         {/** Ban Logging */}
-        <Section
+        {/* <DualTemplateSection
+          title="Ban Logging"
+          enabled={config.banLogEnabled}
+          onToggle={handleChange}
+          namePrefix="banLog"
+          values={{
+            channelId: config.banLogChannelId || "",
+            addTemplate: config.banLogAddTemplate,
+            removeTemplate: config.banLogRemoveTemplate,
+          }}
+          onChange={handleChange}
+          channels={channels}
+        /> */}
+        <SingleTemplateSection
           title="Ban Logging"
           enabled={config.banLogEnabled}
           onToggle={handleChange}
@@ -114,21 +145,22 @@ export default function GuildPage() {
         />
 
         {/** Warn Logging */}
-        <Section
+        {/* <Section
           title="Warn Logging"
           enabled={config.warnLogEnabled}
           onToggle={handleChange}
           namePrefix="warnLog"
           values={{
             channelId: config.warnLogChannelId || "",
-            messageTemplate: config.warnLogMessageTemplate,
+            addTemplate: config.warnLogMessageTemplate,
+            removeTemplate: config.warnLogMessageTemplate,
           }}
           onChange={handleChange}
           channels={channels}
-        />
+        /> */}
 
         {/** Welcome Messages */}
-        <Section
+        <SingleTemplateSection
           title="Welcome Message"
           enabled={config.welcomeEnabled}
           onToggle={handleChange}
@@ -151,90 +183,5 @@ export default function GuildPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-type SectionProps = {
-  title: string;
-  enabled: boolean;
-  onToggle: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  namePrefix: string;
-  values: {
-    channelId: string;
-    messageTemplate: string;
-  };
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  // onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  channels: Channel[];
-};
-
-function Section({ title, enabled, onToggle, namePrefix, values, onChange, channels }: SectionProps) {
-  return (
-    <fieldset>
-      <legend className="text-xl font-semibold text-gray-200 mb-2">{title}</legend>
-      <div className="space-y-4">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name={`${namePrefix}Enabled`}
-            checked={enabled}
-            onChange={onToggle}
-            className="accent-indigo-500"
-          />
-          <span className="text-gray-300">Enabled</span>
-        </label>
-
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Channel ID</label>
-          {/* <input
-            type="text"
-            name={`${namePrefix}ChannelId`}
-            value={values.channelId}
-            onChange={onChange}
-            className="w-full border border-gray-700 rounded-lg bg-gray-900 text-white px-3 py-2"
-          /> */}
-          {/* <select
-        className="border rounded px-2 py-1"
-        value={selected}
-        onChange={e => setSelected(e.target.value)}
-      >
-        <option value="">None</option>
-        {channels
-          .filter(c => c.type === 0 || c.type === 5) // GUILD_TEXT or ANNOUNCEMENT
-          .map(c => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-      </select> */}
-           <select
-            name={`${namePrefix}ChannelId`}
-            value={values.channelId || ""}
-            onChange={onChange}
-            className="w-full border border-gray-700 rounded-lg bg-gray-900 text-white px-3 py-2"
-          >
-            <option value="">None</option>
-            {channels
-              .filter(c => c.type === 0 || c.type === 5) // GUILD_TEXT or ANNOUNCEMENT
-              .map(c => (
-                <option key={c.id} value={c.id}>
-                  #{c.name}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">Message Template</label>
-          <textarea
-            name={`${namePrefix}MessageTemplate`}
-            value={values.messageTemplate}
-            onChange={onChange}
-            rows={3}
-            className="w-full border border-gray-700 rounded-lg bg-gray-900 text-white px-3 py-2"
-          />
-        </div>
-      </div>
-    </fieldset>
   );
 }
