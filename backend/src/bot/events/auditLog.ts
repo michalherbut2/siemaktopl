@@ -10,7 +10,7 @@ const event: BotEvent = {
   async execute(auditLog: GuildAuditLogsEntry, guild: Guild) {
     const configManager = ConfigManager.getInstance();
     const config = await configManager.get(guild);
-    console.log("config?.timeoutLogEnabled", config?.timeoutLogEnabled);
+    // console.log("config?.timeoutLogEnabled", config?.timeoutLogEnabled);
     
     switch (auditLog.action) {
       case AuditLogEvent.MemberBanAdd:
@@ -18,7 +18,9 @@ const event: BotEvent = {
         break;
 
       case AuditLogEvent.MemberUpdate:
-        if (config?.timeoutLogEnabled) logTimeout(auditLog, guild);
+        console.log("timeout:",auditLog);
+        
+        logTimeout(auditLog, guild);
         break;
 
       default:

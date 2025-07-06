@@ -14,10 +14,10 @@ model User {
   id          String   @id
   username    String
   avatar      String?
-  accessToken String?
-  refreshToken String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  accessToken String?                   @map("access_token")
+  refreshToken String?                  @map("refresh_token")
+  createdAt   DateTime @default(now())  @map("created_at")
+  updatedAt   DateTime @updatedAt       @map("updated_at")
 
   @@map("users")
 }
@@ -26,8 +26,8 @@ model Guild {
   id        String   @id
   name      String
   icon      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())  @map("created_at")
+  updatedAt DateTime @updatedAt       @map("updated_at")
 
   // Configuration
   config GuildConfig?
@@ -40,75 +40,67 @@ model Guild {
 
 model GuildConfig {
   id      String @id @default(cuid())
-  guildId String @unique
+  guildId String @unique  @map("guild_id")
   guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
   // Timeout logging
-  timeoutLogEnabled        Boolean @default(false)
-  timeoutLogChannelId      String?
-  timeoutLogAddTemplate       String? @default("{target} w końcu **dostał przerwę** od {executor} na {timestamp} za **{reason}**.")
-  timeoutLogRemoveTemplate    String? @default("niestety {executorId}, jak zbój, zasłużonej **pozbawił przerwy** Czcigodnego {targetId}.")
+  timeoutLogEnabled        Boolean @default(false) @map("timeout_log_enabled")
+  timeoutLogChannelId      String? @map("timeout_log_channel_id")
+  timeoutLogAddTemplate    String? @default("{target} w końcu **dostał przerwę** od {executor} na {timestamp} za **{reason}**.") @map("timeout_log_add_template")
+  timeoutLogRemoveTemplate String? @default("niestety {executorId}, jak zbój, zasłużonej **pozbawił przerwy** Czcigodnego {targetId}.") @map("timeout_log_remove_template")
 
   // Ban logging
-  banLogEnabled            Boolean @default(false)
-  banLogChannelId          String?
-  banLogMessageTemplate    String? @default("**{moderator}** banned **{target}**\n**Reason:** {reason}")
+  banLogEnabled          Boolean @default(false) @map("ban_log_enabled")
+  banLogChannelId        String? @map("ban_log_channel_id")
+  banLogMessageTemplate  String? @default("**{moderator}** banned **{target}**\n**Reason:** {reason}") @map("ban_log_message_template")
 
   // Warn logging
-  warnLogEnabled           Boolean @default(false)
-  warnLogChannelId         String?
-  warnLogMessageTemplate   String? @default("**{moderator}** warned **{target}**\n**Reason:** {reason}")
+  warnLogEnabled         Boolean @default(false) @map("warn_log_enabled")
+  warnLogChannelId       String? @map("warn_log_channel_id")
+  warnLogMessageTemplate String? @default("**{moderator}** warned **{target}**\n**Reason:** {reason}") @map("warn_log_message_template")
 
   // Welcome messages
-  welcomeEnabled           Boolean @default(false)
-  welcomeChannelId         String?
-  welcomeMessageTemplate   String? @default("Welcome to the server, **{user}**!")
+  welcomeEnabled         Boolean @default(false) @map("welcome_enabled")
+  welcomeChannelId       String? @map("welcome_channel_id")
+  welcomeMessageTemplate String? @default("Welcome to the server, **{user}**!") @map("welcome_message_template")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
 
   @@map("guild_configs")
 }
 
 model PunishmentLog {
-  id       String          @id @default(cuid())
-  guildId  String
-  guild    Guild           @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  guildId  String @map("guild_id")
+  guild    Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
   
   // Core punishment data
   type            PunishmentType
-  targetUserId    String
-  moderatorUserId String
+  targetId        String         @map("target_id")
+  executorId      String         @map("executor_id")
   reason          String?
-  
-  // Duration in seconds (null for permanent bans, warnings, etc.)
-  durationSeconds Int?
-  
+    
   // Timestamps
-  createdAt DateTime @default(now())
-  expiresAt DateTime? // When the punishment expires (for timeouts)
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime?                @map("expires_at") // When the punishment expires (for timeouts)
   
   // Removal tracking
-  removedAt       DateTime?
-  removedByUserId String?
-  removalReason   String?
+  removedAt       DateTime? @map("removed_at")
+  removedByUserId String?   @map("removed_by_user_id")
   
-  // Additional metadata
-  metadata Json? // For extensibility (e.g., warning levels, custom fields)
-
   @@map("punishment_logs")
   
   // Indexes for performance
   @@index([guildId, type])
-  @@index([guildId, targetUserId])
-  @@index([guildId, moderatorUserId])
+  @@index([guildId, targetId])
+  @@index([guildId, executorId])
   @@index([guildId, createdAt])
   @@index([guildId, type, createdAt])
-  @@index([targetUserId, type])
-  @@index([moderatorUserId, type])
+  @@index([targetId, type])
+  @@index([executorId, type])
   @@index([expiresAt])
   @@index([removedAt])
-  @@index([durationSeconds])
 }
 
 enum PunishmentType {

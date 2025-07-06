@@ -105,18 +105,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // Apply timeout
     await targetMember.timeout(duration, reason);
 
-    // Log to database
-    const punishmentLog = await prisma.punishmentLog.create({
-      data: {
-        guildId: interaction.guild.id,
-        type: PunishmentType.TIMEOUT,
-        targetUserId: targetUser.id,
-        moderatorUserId: moderator.id,
-        reason,
-        durationSeconds,
-        expiresAt,
-      },
-    });
+    // // Log to database
+    // const punishmentLog = await prisma.punishmentLog.create({
+    //   data: {
+    //     guildId: interaction.guild.id,
+    //     type: PunishmentType.TIMEOUT,
+    //     targetId: targetUser.id,
+    //     executorId: moderator.id,
+    //     reason,
+    //     expiresAt,
+    //   },
+    // });
 
     // Send success response
     const embed = new EmbedBuilder()
