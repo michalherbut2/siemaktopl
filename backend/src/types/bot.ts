@@ -1,8 +1,8 @@
 // backend/src/types/bot.ts
-import { SlashCommandBuilder, ChatInputCommandInteraction, Message, Client, ClientEvents } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Message, Client, ClientEvents, SlashCommandSubcommandsOnlyBuilder } from 'discord.js';
 
 export interface SlashCommand {
-  data: SlashCommandBuilder;
+  data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 

@@ -169,7 +169,7 @@ class TimeoutHandler {
       const channel = TimeoutUtils.findLogChannel(guild, channelId);
 
       if (!config?.timeoutLogEnabled) {
-        return console.warn(`Timeout logging is disabled for guild ${guild.id}`)
+        return console.warn(`Timeout logging is disabled for guild ${guild.name}`)
       }
 
       if (!channel) {
@@ -262,7 +262,7 @@ const handleTimeoutWithErrorBoundary = async (
   try {
     await TimeoutHandler.handle(auditLog, guild);
   } catch (error) {
-    console.error(`Failed to handle timeout for guild ${guild.id}:`, error);
+    console.error(`Failed to handle timeout for guild ${guild.name}:`, error);
     // You could also send this to a monitoring service
   }
 };

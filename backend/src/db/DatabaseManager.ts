@@ -14,6 +14,7 @@ type GuildConfigInput = Partial<
   Omit<GuildConfig, "id" | "guildId" | "createdAt" | "updatedAt">
 >;
 type UserData = Partial<Omit<User, "createdAt" | "updatedAt">> & { id: string };
+type GuildConfigInput2 = Partial<Omit<GuildConfig, 'id' | 'guildId' | 'createdAt' | 'updatedAt' | 'guild'>>;
 
 export class DatabaseManager {
   private static instance: PrismaClient;
@@ -84,30 +85,31 @@ export class DatabaseManager {
   /**
    * Create or update guild configuration
    */
-  static async upsertGuildConfig(
-    guildDC: GuildDC,
-    config: GC
-  ): Promise<GuildConfig> {
+
+static async upsertGuildConfig(
+  guildDC: GuildDC,
+  config: GuildConfigInput2
+): Promise<GuildConfig> {
     await this.ensureGuild(guildDC);
     const guildId = guildDC.id;
     console.log("config", config);
 
     // Usuń pola, których Prisma nie przyjmuje w update/create
-    const {
-      id,
-      createdAt,
-      updatedAt,
-      guild,
-      guildId: _ignoredGuildId,
-      ...sanitizedConfig
-    } = config;
+    // const {
+    //   id,
+    //   createdAt,
+    //   updatedAt,
+    //   guild,
+    //   guildId: _ignoredGuildId,
+    //   ...sanitizedConfig
+    // } = config;
 
     return await this.db.guildConfig.upsert({
       where: { guildId },
-      update: sanitizedConfig,
+      update: config,
       create: {
         guildId,
-        ...sanitizedConfig,
+        ...config,
       },
       include: { guild: true },
     });
