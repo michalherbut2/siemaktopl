@@ -5,22 +5,22 @@
 1. Copy `.env.example` to `.env` and fill in your credentials.
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 3. Run Prisma migrations:
    ```bash
-   npx prisma migrate dev --name init
+   pnpm exec prisma migrate dev --name init
    ```
 
 ## Development
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ## Build
 
 ```bash
-npm run build
-npm start
+pnpm run build
+pnpm start
 ```

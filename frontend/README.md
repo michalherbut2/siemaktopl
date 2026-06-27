@@ -5,18 +5,18 @@
 1. Copy `.env.example` to `.env` and fill in your credentials.
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
 ## Development
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ## Build
 
 ```bash
-npm run build
-npm run start
+pnpm run build
+pnpm run start
 ```

@@ -1,42 +1,45 @@
 ## 🛠️ Setup
 
 ### Prerequisites
+
 - Node.js 18+
-- npm or yarn
+- pnpm
 - Discord Application & Bot Token
 
 ### Installation
 
 1. **Clone and install dependencies:**
+
 ```bash
 git clone <your-repo>
 cd discord-bot-boilerplate
-npm install
-cd backend && npm install
-cd ../frontend && npm install
+pnpm install
 ```
 
 2. **Environment Setup:**
+
 ```bash
 cp .env.example .env
 # Edit .env with your values
 ```
 
 3. **Database Setup:**
+
 ```bash
 cd backend
-npx prisma generate
-npx prisma db push
+pnpm exec prisma generate
+pnpm exec prisma db push
 ```
 
 4. **Development:**
+
 ```bash
 # Root directory - runs both backend and frontend
-npm run dev
+pnpm dev
 
 # Or separately:
-npm run dev:backend
-npm run dev:frontend
+pnpm dev:backend
+pnpm dev:frontend
 ```
 
 ## 📋 Environment Variables

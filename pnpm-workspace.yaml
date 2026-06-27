@@ -1,0 +1,17 @@
+packages:
+  - backend
+  - frontend
+overrides:
+  tar: ^7.5.16
+  undici: ^6.27.0
+  "@tootallnate/once": 2.0.1
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  esbuild: true
+  prisma: true
+  sqlite3: true
+minimumReleaseAgeExclude:
+  - tar@7.5.3 || 7.5.4 || 7.5.7 || 7.5.8 || 7.5.10 || 7.5.11 || 7.5.16
+  - "@tootallnate/once@2.0.1"
+  - undici@6.27.0

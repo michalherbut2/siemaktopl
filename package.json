@@ -3,25 +3,25 @@
   "version": "1.0.0",
   "description": "Full-stack Discord bot with React dashboard",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build": "npm run build:backend && npm run build:frontend",
-    "build:backend": "cd backend && npm run build",
-    "build:frontend": "cd frontend && npm run build",
-    "start:backend": "cd backend && npm start",
+    "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
+    "dev:backend": "pnpm --filter discord-bot-backend dev",
+    "dev:frontend": "pnpm --filter discord-bot-frontend dev",
+    "build": "pnpm run build:backend && pnpm run build:frontend",
+    "build:backend": "pnpm --filter discord-bot-backend build",
+    "build:frontend": "pnpm --filter discord-bot-frontend build",
+    "start:backend": "pnpm --filter discord-bot-backend start",
     "start:frontend": "serve -s frontend/dist -l 3000",
-    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "db:setup": "cd backend && npm run db:generate && npm run db:push"
+    "start": "concurrently \"pnpm run start:frontend\" \"pnpm run start:backend\"",
+    "install:all": "pnpm install",
+    "db:setup": "pnpm --filter discord-bot-backend db:generate && pnpm --filter discord-bot-backend db:push"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "serve": "^14.2.5"
+    "serve": "^14.2.6"
   }
 }
