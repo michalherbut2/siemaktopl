@@ -25,10 +25,9 @@ jobs:
             Title: ${{ github.event.issue.title }}
             Body: ${{ github.event.issue.body }}
 
-      - name: Comment with AI summary
+      - name: Post comment
         run: |
-          gh issue comment $ISSUE_NUMBER --body '${{ steps.inference.outputs.response }}'
+          echo "$LLM_RESPONSE" > response.txt
+          gh issue comment "${{ github.event.issue.number }}" --body-file response.txt
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          RESPONSE: ${{ steps.inference.outputs.response }}
+          LLM_RESPONSE: ${{ steps.inference.outputs.response }}
